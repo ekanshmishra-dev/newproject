@@ -1,0 +1,153 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: microstack-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password123
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - microstack-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: microstack-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass redis123
+    volumes:
+      - redis_data:/data
+    networks:
+      - microstack-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+    container_name: microstack-auth
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/microstack-auth?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      JWT_ACCESS_SECRET: your-super-secret-access-key-min-32-chars-change-in-production
+      JWT_REFRESH_SECRET: your-super-secret-refresh-key-min-32-chars-change-in-production
+      JWT_ACCESS_EXPIRY: 15m
+      JWT_REFRESH_EXPIRY: 7d
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microstack-network
+
+  # API Gateway
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+    container_name: microstack-gateway
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: production
+      JWT_ACCESS_SECRET: your-super-secret-access-key-min-32-chars-change-in-production
+      AUTH_SERVICE_URL: http://auth-service:3001
+      CHAT_SERVICE_URL: http://chat-service:3002
+      NOTIFICATION_SERVICE_URL: http://notification-service:3003
+      CORS_ORIGIN: http://localhost:5173,http://localhost:3000
+    depends_on:
+      - auth-service
+    networks:
+      - microstack-network
+
+  # Chat Service
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
+    container_name: microstack-chat
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      PORT: 3002
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/microstack-chat?authSource=admin
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      JWT_ACCESS_SECRET: your-super-secret-access-key-min-32-chars-change-in-production
+      CORS_ORIGIN: http://localhost:3000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - microstack-network
+
+  # Notification Service
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification/Dockerfile
+    container_name: microstack-notification
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    environment:
+      PORT: 3003
+      NODE_ENV: production
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: redis123
+      EMAIL_PROVIDER: smtp
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: your-email@gmail.com
+      SMTP_PASS: your-app-password
+      EMAIL_FROM: noreply@microstack.com
+      APP_URL: http://localhost:3000
+      JWT_ACCESS_SECRET: your-super-secret-access-key-min-32-chars-change-in-production
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - microstack-network
+
+networks:
+  microstack-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  redis_data:

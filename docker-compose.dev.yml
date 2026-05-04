@@ -1,0 +1,51 @@
+version: '3.8'
+
+# Development overrides
+services:
+  auth-service:
+    build:
+      context: .
+      dockerfile: services/auth/Dockerfile
+      target: builder
+    command: npm run dev
+    volumes:
+      - ./services/auth/src:/app/services/auth/src
+      - ./packages/common:/app/packages/common
+    environment:
+      NODE_ENV: development
+
+  gateway:
+    build:
+      context: .
+      dockerfile: services/gateway/Dockerfile
+      target: builder
+    command: npm run dev
+    volumes:
+      - ./services/gateway/src:/app/services/gateway/src
+      - ./packages/common:/app/packages/common
+    environment:
+      NODE_ENV: development
+
+  chat-service:
+    build:
+      context: .
+      dockerfile: services/chat/Dockerfile
+      target: builder
+    command: npm run dev
+    volumes:
+      - ./services/chat/src:/app/services/chat/src
+      - ./packages/common:/app/packages/common
+    environment:
+      NODE_ENV: development
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: services/notification/Dockerfile
+      target: builder
+    command: npm run dev
+    volumes:
+      - ./services/notification/src:/app/services/notification/src
+      - ./packages/common:/app/packages/common
+    environment:
+      NODE_ENV: development
