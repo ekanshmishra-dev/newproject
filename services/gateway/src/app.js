@@ -21,9 +21,8 @@ app.use(cors());
 // Global Rate Limiting
 app.use(globalLimiter);
 
-// Parse JSON body (for routes handled by gateway itself, like health)
-// Note: Proxying usually streams the body, but for simple setups this is fine.
-app.use(express.json());
+// Parse JSON body (Only needed for routes handled BY the gateway, like /health if it were POST)
+// REMOVED: app.use(express.json()); // This breaks proxying of POST requests
 
 // Log every request hitting the gateway
 app.use(requestLogger);

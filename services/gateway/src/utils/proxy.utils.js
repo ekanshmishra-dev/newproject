@@ -11,6 +11,7 @@ export const setupProxy = (target, pathRewrite) => {
   return createProxyMiddleware({
     target,
     changeOrigin: true,
+    ws: true, // Enable WebSocket proxying
     pathRewrite,
     proxyTimeout: 10000, // 10s
     onProxyReq: (proxyReq, req, res) => {

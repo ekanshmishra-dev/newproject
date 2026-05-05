@@ -1,5 +1,7 @@
 import express from 'express';
 import authGateway from './auth.gateway.js';
+import chatGateway from './chat.gateway.js';
+import notificationGateway from './notification.gateway.js';
 import { ApiError } from '@service-hub/common';
 
 const router = express.Router();
@@ -22,6 +24,8 @@ router.get('/health', (req, res) => {
 
 // Service Routes
 router.use('/auth', authGateway);
+router.use('/chat', chatGateway);
+router.use('/notifications', notificationGateway);
 
 // Handle 404
 router.all('*', (req, res, next) => {
