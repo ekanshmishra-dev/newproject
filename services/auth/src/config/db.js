@@ -1,15 +1,7 @@
 import mongoose from 'mongoose';
 import { logger } from '@service-hub/common';
 
-/**
- * MongoDB Connection with Retry Logic
- * 
- * PURPOSE: Manages the connection to MongoDB.
- * STRUCTURE: Uses a recursive function for retries.
- * CONNECTS TO: Used by server.js to initialize the DB.
- * BEST PRACTICE: Implements exponential backoff (fixed 5s here) and event listeners 
- * for 'error' and 'disconnected' to maintain system health.
- */
+
 
 let retryCount = 0;
 const MAX_RETRIES = 5;
@@ -18,7 +10,7 @@ const connectDB = async () => {
   try {
     const conn = await mongoose.connect(process.env.MONGODB_URI);
     logger.info(`✅ MongoDB Connected: ${conn.connection.host}`);
-    retryCount = 0; // Reset on success
+    retryCount = 0; 
   } catch (error) {
     logger.error(`❌ MongoDB Connection Error: ${error.message}`);
     
@@ -33,7 +25,7 @@ const connectDB = async () => {
   }
 };
 
-// Handle connection events
+
 mongoose.connection.on('disconnected', () => {
   logger.warn('⚠️ MongoDB Disconnected. Attempting to reconnect...');
   connectDB();
